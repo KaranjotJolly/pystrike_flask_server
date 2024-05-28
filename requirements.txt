@@ -1,0 +1,8 @@
+Flask
+numpy
+matplotlib
+pandas
+scikit-learn
+scikit-image
+xgboost
+scipy

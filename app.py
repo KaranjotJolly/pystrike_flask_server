@@ -4,6 +4,8 @@ from flask_cors import CORS
 import subprocess
 import os
 import io
+import sys
+import contextlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -19,15 +21,26 @@ CORS(app)  # Enable CORS for all routes
 
 logging.basicConfig(level=logging.DEBUG)
 
+@contextlib.contextmanager
+def capture_stdout():
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        yield sys.stdout
+    finally:
+        sys.stdout = old_stdout
+
 @app.route('/run_code', methods=['POST'])
 def run_code():
     code = request.json.get('code')
     app.logger.debug(f"Received code: {code}")
-    # Execute the code and capture the output
     try:
         exec_globals = {}
         exec_locals = {}
-        exec(code, exec_globals, exec_locals)
+        with capture_stdout() as output:
+            exec(code, exec_globals, exec_locals)
+        stdout_output = output.getvalue()
+
         # Check for any generated figures
         if plt.get_fignums():
             fig = plt.gcf()
@@ -37,9 +50,8 @@ def run_code():
             plt.close(fig)  # Close the figure to avoid memory issues
             return send_file(buf, mimetype='image/png')
         else:
-            output = exec_locals.get('output', 'No output')
-            app.logger.debug(f"Output: {output}")
-            return jsonify({'output': output})
+            app.logger.debug(f"Output: {stdout_output}")
+            return jsonify({'output': stdout_output if stdout_output else 'No output'})
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({'error': str(e)})

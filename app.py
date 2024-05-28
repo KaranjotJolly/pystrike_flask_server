@@ -12,16 +12,19 @@ import skimage
 import xgboost
 import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+import logging
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+logging.basicConfig(level=logging.DEBUG)
+
 @app.route('/run_code', methods=['POST'])
 def run_code():
     code = request.json.get('code')
+    app.logger.debug(f"Received code: {code}")
     # Execute the code and capture the output
     try:
-        # Setup a secure environment for the execution
         exec_globals = {}
         exec_locals = {}
         exec(code, exec_globals, exec_locals)
@@ -31,10 +34,14 @@ def run_code():
             buf = io.BytesIO()
             FigureCanvas(fig).print_png(buf)
             buf.seek(0)
+            plt.close(fig)  # Close the figure to avoid memory issues
             return send_file(buf, mimetype='image/png')
         else:
-            return jsonify({'output': exec_locals.get('output', 'No output')})
+            output = exec_locals.get('output', 'No output')
+            app.logger.debug(f"Output: {output}")
+            return jsonify({'output': output})
     except Exception as e:
+        app.logger.error(f"Error: {e}")
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':

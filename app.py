@@ -50,7 +50,9 @@ def run_code():
             FigureCanvas(fig).print_png(buf)
             buf.seek(0)
             plt.close(fig)  # Close the figure to avoid memory issues
-            return send_file(buf, mimetype='image/png', as_attachment=True, download_name='plot.png')
+
+            # Include the image data in the response
+            response['image'] = buf.getvalue().decode('latin1')
 
         app.logger.debug(f"Output: {stdout_output}")
         return jsonify(response)

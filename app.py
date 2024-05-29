@@ -50,7 +50,7 @@ def run_code():
             FigureCanvas(fig).print_png(buf)
             buf.seek(0)
             plt.close(fig)  # Close the figure to avoid memory issues
-            return send_file(buf, mimetype='image/png', as_attachment=True, attachment_filename='plot.png')
+            return send_file(buf, mimetype='image/png', as_attachment=True, download_name='plot.png')
 
         app.logger.debug(f"Output: {stdout_output}")
         return jsonify(response)
@@ -60,4 +60,3 @@ def run_code():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-    

@@ -5,6 +5,12 @@ import io
 import sys
 import contextlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import sklearn
+import skimage
+import xgboost
+import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import base64
 import logging
@@ -66,7 +72,8 @@ def run_code():
             'sklearn': sklearn,
             'skimage': skimage,
             'xgboost': xgboost,
-            'scipy': scipy
+            'scipy': scipy,
+            'print': print,  # Make sure print is available
         }
         exec_locals = {}
 

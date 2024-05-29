@@ -43,12 +43,13 @@ class OutputCapture(io.StringIO):
 @contextlib.contextmanager
 def capture_output():
     old_stdout = sys.stdout
-    old_show = plt.show
     capture = OutputCapture()
     sys.stdout = capture
 
+    original_show = plt.show
+
     def custom_show(*args, **kwargs):
-        old_show(*args, **kwargs)
+        original_show(*args, **kwargs)
         capture.show_figure()
 
     plt.show = custom_show
@@ -57,7 +58,7 @@ def capture_output():
         yield capture
     finally:
         sys.stdout = old_stdout
-        plt.show = old_show
+        plt.show = original_show
 
 @app.route('/run_code', methods=['POST'])
 def run_code():

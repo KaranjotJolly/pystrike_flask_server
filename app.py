@@ -5,12 +5,6 @@ import io
 import sys
 import contextlib
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import sklearn
-import skimage
-import xgboost
-import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import base64
 import logging
@@ -49,8 +43,8 @@ def capture_stdout():
     original_show = plt.show
 
     def custom_show(*args, **kwargs):
-        original_show(*args, **kwargs)
         capture.show_figure()
+        original_show(*args, **kwargs)
 
     plt.show = custom_show
 

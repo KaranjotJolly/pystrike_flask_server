@@ -30,28 +30,23 @@ def run_code():
     try:
         exec_globals = {}
         exec_locals = {}
-        output_parts = []
-        
+
         with capture_stdout() as output:
             exec(code, exec_globals, exec_locals)
             stdout_output = output.getvalue()
-            output_parts.append(stdout_output)
-        
-        images = []
+
+        response = {'output': stdout_output if stdout_output.strip() else ''}
+
+        # Check for any generated figures
         if plt.get_fignums():
             figs = [plt.figure(n) for n in plt.get_fignums()]
+            images = []
             for fig in figs:
                 buf = io.BytesIO()
                 FigureCanvas(fig).print_png(buf)
                 buf.seek(0)
                 images.append(buf.getvalue().decode('latin1'))
                 plt.close(fig)  # Close the figure to avoid memory issues
-
-        response = {}
-        if stdout_output.strip():
-            response['output'] = stdout_output
-        
-        if images:
             response['images'] = images
 
         app.logger.debug(f"Output: {stdout_output}")

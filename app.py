@@ -30,25 +30,29 @@ def run_code():
     try:
         exec_globals = {}
         exec_locals = {}
+        output_parts = []
+        
         with capture_stdout() as output:
             exec(code, exec_globals, exec_locals)
-        stdout_output = output.getvalue()
+            stdout_output = output.getvalue()
+            output_parts.append(stdout_output)
+        
+        images = []
+        if plt.get_fignums():
+            figs = [plt.figure(n) for n in plt.get_fignums()]
+            for fig in figs:
+                buf = io.BytesIO()
+                FigureCanvas(fig).print_png(buf)
+                buf.seek(0)
+                images.append(buf.getvalue().decode('latin1'))
+                plt.close(fig)  # Close the figure to avoid memory issues
 
         response = {}
-
-        # Check for any generated figures
-        if plt.get_fignums():
-            fig = plt.gcf()
-            buf = io.BytesIO()
-            FigureCanvas(fig).print_png(buf)
-            buf.seek(0)
-            plt.close(fig)  # Close the figure to avoid memory issues
-            response['image'] = buf.getvalue().decode('latin1')
-
         if stdout_output.strip():
             response['output'] = stdout_output
-        elif 'image' not in response:
-            response['output'] = 'No output'
+        
+        if images:
+            response['images'] = images
 
         app.logger.debug(f"Output: {stdout_output}")
         return jsonify(response)

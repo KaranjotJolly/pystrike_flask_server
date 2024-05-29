@@ -14,52 +14,61 @@ CORS(app)  # Enable CORS for all routes
 
 logging.basicConfig(level=logging.DEBUG)
 
-class StdoutCapture:
+class StdoutCapture(io.StringIO):
     def __init__(self):
-        self.output = io.StringIO()
-        self.figures = []
+        super().__init__()
+        self.output_parts = []
 
     def write(self, data):
-        self.output.write(data)
+        self.output_parts.append(('text', data))
+        super().write(data)
 
     def flush(self):
         pass
 
     def show_figure(self):
-        if plt.get_fignums():
-            buf = io.BytesIO()
-            FigureCanvas(plt.gcf()).print_png(buf)
-            buf.seek(0)
-            encoded = base64.b64encode(buf.read()).decode('utf-8')
-            self.figures.append(encoded)
-            plt.close(plt.gcf())
+        buf = io.BytesIO()
+        FigureCanvas(plt.gcf()).print_png(buf)
+        buf.seek(0)
+        encoded = base64.b64encode(buf.read()).decode('utf-8')
+        self.output_parts.append(('image', encoded))
+        plt.close(plt.gcf())
 
 @contextlib.contextmanager
 def capture_stdout():
     old_stdout = sys.stdout
     capture = StdoutCapture()
     sys.stdout = capture
+
+    original_show = plt.show
+
+    def custom_show(*args, **kwargs):
+        original_show(*args, **kwargs)
+        capture.show_figure()
+
+    plt.show = custom_show
+
     try:
         yield capture
     finally:
         sys.stdout = old_stdout
+        plt.show = original_show
 
 @app.route('/run_code', methods=['POST'])
 def run_code():
     code = request.json.get('code')
     app.logger.debug(f"Received code: {code}")
     try:
-        exec_globals = {'plt': plt}
+        exec_globals = {'plt': plt, 'np': np}
         exec_locals = {}
 
         with capture_stdout() as capture:
             exec(code, exec_globals, exec_locals)
-            stdout_output = capture.output.getvalue()
-            figures = capture.figures
+            output_parts = capture.output_parts
 
-        response = {'output': stdout_output, 'figures': figures}
+        response = {'output_parts': output_parts}
 
-        app.logger.debug(f"Output: {stdout_output}")
+        app.logger.debug(f"Output: {output_parts}")
         return jsonify(response)
     except Exception as e:
         app.logger.error(f"Error: {e}")

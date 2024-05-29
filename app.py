@@ -5,12 +5,6 @@ import io
 import sys
 import contextlib
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import sklearn
-import skimage
-import xgboost
-import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import base64
 import logging
@@ -20,7 +14,7 @@ CORS(app)  # Enable CORS for all routes
 
 logging.basicConfig(level=logging.DEBUG)
 
-class StdoutCapture(io.StringIO):
+class OutputCapture(io.StringIO):
     def __init__(self):
         super().__init__()
         self.output_parts = []
@@ -41,16 +35,15 @@ class StdoutCapture(io.StringIO):
         plt.close(plt.gcf())
 
 @contextlib.contextmanager
-def capture_stdout():
+def capture_output():
     old_stdout = sys.stdout
-    capture = StdoutCapture()
+    old_show = plt.show
+    capture = OutputCapture()
     sys.stdout = capture
 
-    original_show = plt.show
-
     def custom_show(*args, **kwargs):
+        old_show(*args, **kwargs)
         capture.show_figure()
-        original_show(*args, **kwargs)
 
     plt.show = custom_show
 
@@ -58,7 +51,7 @@ def capture_stdout():
         yield capture
     finally:
         sys.stdout = old_stdout
-        plt.show = original_show
+        plt.show = old_show
 
 @app.route('/run_code', methods=['POST'])
 def run_code():
@@ -72,12 +65,11 @@ def run_code():
             'sklearn': sklearn,
             'skimage': skimage,
             'xgboost': xgboost,
-            'scipy': scipy,
-            'print': print,  # Make sure print is available
+            'scipy': scipy
         }
         exec_locals = {}
 
-        with capture_stdout() as capture:
+        with capture_output() as capture:
             exec(code, exec_globals, exec_locals)
             output_parts = capture.output_parts
 

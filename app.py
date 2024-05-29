@@ -41,6 +41,8 @@ def run_code():
             exec(code, exec_globals, exec_locals)
         stdout_output = output.getvalue()
 
+        response = {'output': stdout_output if stdout_output else 'No output'}
+
         # Check for any generated figures
         if plt.get_fignums():
             fig = plt.gcf()
@@ -48,13 +50,14 @@ def run_code():
             FigureCanvas(fig).print_png(buf)
             buf.seek(0)
             plt.close(fig)  # Close the figure to avoid memory issues
-            return send_file(buf, mimetype='image/png')
-        else:
-            app.logger.debug(f"Output: {stdout_output}")
-            return jsonify({'output': stdout_output if stdout_output else 'No output'})
+            return send_file(buf, mimetype='image/png', as_attachment=True, attachment_filename='plot.png')
+
+        app.logger.debug(f"Output: {stdout_output}")
+        return jsonify(response)
     except Exception as e:
         app.logger.error(f"Error: {e}")
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+    

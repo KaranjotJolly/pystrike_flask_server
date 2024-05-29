@@ -5,6 +5,12 @@ import io
 import sys
 import contextlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import sklearn
+import skimage
+import xgboost
+import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import base64
 import logging
@@ -59,7 +65,15 @@ def run_code():
     code = request.json.get('code')
     app.logger.debug(f"Received code: {code}")
     try:
-        exec_globals = {'plt': plt, 'np': np}
+        exec_globals = {
+            'plt': plt,
+            'np': np,
+            'pd': pd,
+            'sklearn': sklearn,
+            'skimage': skimage,
+            'xgboost': xgboost,
+            'scipy': scipy
+        }
         exec_locals = {}
 
         with capture_stdout() as capture:

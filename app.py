@@ -1,18 +1,11 @@
 # app.py
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-import subprocess
 import os
 import io
 import sys
 import contextlib
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import sklearn
-import skimage
-import xgboost
-import scipy
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
 
@@ -41,7 +34,7 @@ def run_code():
             exec(code, exec_globals, exec_locals)
         stdout_output = output.getvalue()
 
-        response = {'output': stdout_output if stdout_output else 'No output'}
+        response = {}
 
         # Check for any generated figures
         if plt.get_fignums():
@@ -50,9 +43,12 @@ def run_code():
             FigureCanvas(fig).print_png(buf)
             buf.seek(0)
             plt.close(fig)  # Close the figure to avoid memory issues
-
-            # Include the image data in the response
             response['image'] = buf.getvalue().decode('latin1')
+
+        if stdout_output.strip():
+            response['output'] = stdout_output
+        elif 'image' not in response:
+            response['output'] = 'No output'
 
         app.logger.debug(f"Output: {stdout_output}")
         return jsonify(response)
